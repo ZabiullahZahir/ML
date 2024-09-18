@@ -1,12 +1,10 @@
-%%writefile app.py
-
 import pandas as pd
 from mlxtend.frequent_patterns import fpgrowth, association_rules
 import streamlit as st
 import matplotlib.pyplot as plt
 
 # Load the dataset
-file_path = '/content/drive/My Drive/MLdataset.csv'
+file_path = 'MLdataset.csv'  # Adjust the file path as necessary
 df = pd.read_csv(file_path)
 
 # Select the first 80000 rows and relevant columns
@@ -15,10 +13,9 @@ keep_columns = ['Crm Cd Desc', 'Vict Sex', 'Vict Descent', 'Premis Desc', 'Weapo
 df = df[keep_columns]
 
 # Replace null values in selected columns
-df['Vict Sex'] = df['Vict Sex'].fillna('N/A')
-df['Vict Descent'] = df['Vict Descent'].fillna('N/A')
-df['Premis Desc'] = df['Premis Desc'].fillna('N/A')
-df['Weapon Desc'] = df['Weapon Desc'].fillna('N/A')
+for col in keep_columns:
+    if col in df.columns:
+        df[col] = df[col].fillna('N/A')
 
 # One-hot encoding for categorical columns
 df = pd.get_dummies(df, columns=keep_columns)
@@ -40,24 +37,30 @@ limitedCol = rules[['antecedents', 'consequents', 'support', 'confidence', 'lift
 st.write('Association Rules:', limitedCol)
 
 # Visualize the support vs confidence for the generated rules
-st.write('Support vs Confidence')
-fig, ax = plt.subplots()
-ax.scatter(rules['support'], rules['confidence'], alpha=0.5)
-ax.set_xlabel('Support')
-ax.set_ylabel('Confidence')
-ax.set_title('Support vs Confidence')
-st.pyplot(fig)
+if not rules.empty:
+    st.write('Support vs Confidence')
+    fig, ax = plt.subplots()
+    ax.scatter(rules['support'], rules['confidence'], alpha=0.5)
+    ax.set_xlabel('Support')
+    ax.set_ylabel('Confidence')
+    ax.set_title('Support vs Confidence')
+    st.pyplot(fig)
+else:
+    st.write('No rules generated. Please adjust the parameters.')
 
 # Sort rules by confidence and display top 10
 sorted_rules = limitedCol.sort_values(by='confidence', ascending=False).head(10)
 
 # Create a bar plot for the top 10 rules based on confidence
-st.write('Top 10 Association Rules by Confidence')
-fig, ax = plt.subplots(figsize=(10, 6))
-ax.barh(range(len(sorted_rules)), sorted_rules['confidence'], color='skyblue')
-ax.set_yticks(range(len(sorted_rules)))
-ax.set_yticklabels([f"{list(ante)} → {list(cons)}" for ante, cons in zip(sorted_rules['antecedents'], sorted_rules['consequents'])])
-ax.set_xlabel('Confidence')
-ax.set_title('Top 10 Association Rules by Confidence')
-ax.invert_yaxis()
-st.pyplot(fig)
+if not sorted_rules.empty:
+    st.write('Top 10 Association Rules by Confidence')
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.barh(range(len(sorted_rules)), sorted_rules['confidence'], color='skyblue')
+    ax.set_yticks(range(len(sorted_rules)))
+    ax.set_yticklabels([f"{', '.join(list(ante))} → {', '.join(list(cons))}" for ante, cons in zip(sorted_rules['antecedents'], sorted_rules['consequents'])])
+    ax.set_xlabel('Confidence')
+    ax.set_title('Top 10 Association Rules by Confidence')
+    ax.invert_yaxis()
+    st.pyplot(fig)
+else:
+    st.write('No association rules to display.')
